@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "emervpn"
+version = "0.1.0"
+description = "Virtual *Private* Network build on WireGuard and Emercoin blockchain."
+authors = ["Vasiliy Petrov <cofob@riseup.net>"]
+license = "AGPLv3"
+
+[tool.poetry.scripts]
+emervpn = "emervpn.shell:start"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pyemer = "^0.1.0"
+PyNaCl = "^1.5.0"
+py-ubjson = "^0.16.1"
+requests = "^2.27.1"
+
+[tool.poetry.dev-dependencies]
+black = "^22.3.0"
+isort = "^5.10.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

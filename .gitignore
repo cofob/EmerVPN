@@ -1,3 +1,10 @@
+# Work files
+evpn0.conf
+config.bin
+
+# IDEA
+.idea
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
