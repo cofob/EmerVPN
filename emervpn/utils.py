@@ -29,7 +29,7 @@ def get_peers(emer: pyemer.Emer, crypt_key: bytes, cryptor: emervpn.crypto.Crypt
 
 def get_addr_for_i(config, i):
     net: ipaddress.IPv4Network = ipaddress.ip_network(config["subnet"])
-    return list(net.hosts())[i]
+    return list(net.hosts())[i-1]
 
 
 def get_mask(config: dict):

@@ -52,7 +52,7 @@ def start():
         "pubkey", subprocess.check_output("wg genkey".split()).decode().strip()
     )
     p = subprocess.Popen(
-        "wg pubkey",
+        "wg pubkey".split(),
         stdout=subprocess.PIPE,
         stdin=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -155,6 +155,8 @@ def start():
         peers = emervpn.utils.get_peers(emer, config["crypt_key"], cryptor)
         config_builder.add_peers(peers)
         print(config_builder.generate())
+    elif args.command == "address":
+        print(emer.get_account_address().address)
     elif args.command == "config":
         pprint.pprint(config)
     else:
