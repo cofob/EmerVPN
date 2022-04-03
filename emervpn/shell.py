@@ -62,7 +62,7 @@ def start():
         "pubkey", p.communicate(input=config["privkey"].encode())[0].decode().strip()
     )
 
-    config["interface"] = config.get(args.interface)
+    config["interface"] = args.interface
 
     config_reader.save()
 
