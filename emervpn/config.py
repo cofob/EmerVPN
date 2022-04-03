@@ -27,8 +27,8 @@ Address    = {get_addr_for_i(self.config, self.config["i"])}/{get_mask(self.conf
 DNS        = {self.config["dns"]}
 PrivateKey = {self.private_key}
 ListenPort = 51820
-PostUp     = iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o enp9s0 -j MASQUERADE
-PostDown   = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o enp9s0 -j MASQUERADE
+PostUp     = iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o {self.config["interface"]} -j MASQUERADE
+PostDown   = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o {self.config["interface"]} -j MASQUERADE
 {''.join([self.generate_peer(peer) for peer in self.peers])}"""
 
 

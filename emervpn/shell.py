@@ -40,6 +40,7 @@ def start():
     parser.add_argument("-p", "--password", type=str, help="rpc password")
     parser.add_argument("-H", "--host", type=str, help="rpc host", default="localhost")
     parser.add_argument("-P", "--port", type=int, help="rpc port", default=6662)
+    parser.add_argument("-i", "--interface", type=str, help="interface name", default="eth0")
     args = parser.parse_args()
 
     config_reader = ConfigReader()
@@ -60,6 +61,8 @@ def start():
     config["pubkey"] = config.get(
         "pubkey", p.communicate(input=config["privkey"].encode())[0].decode().strip()
     )
+
+    config["interface"] = config.get(args.interface)
 
     config_reader.save()
 
