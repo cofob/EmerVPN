@@ -8,12 +8,12 @@ import pyemer
 import requests
 import ubjson
 
-import emervpn.main
+import emervpn.utils
 from emervpn.config import ConfigReader, WGConfigBuilder
 from emervpn.crypto import Cryptor, sha256
 
 
-def reconfigure(emer: pyemer.Emer, config: dict) -> dict:
+def reconfigure(emer: pyemer.Emer, config: dict) -> None:
     value = emer.name_show(
         f"vpn:{sha256(config['crypt_key'])}", pyemer.ValueType.base64
     )
@@ -21,17 +21,21 @@ def reconfigure(emer: pyemer.Emer, config: dict) -> dict:
     obj = ubjson.loadb(
         cryptor.decrypt(
             emervpn.crypto.EncryptedData(
-                value.record.value[48:], value.record.value[:24]
+                value.record.value[24:], value.record.value[:24]
             )
         )
     )
+    if obj["revoked"]:
+        print("Network revoked!")
+        exit(1)
     config["subnet"] = obj["subnet"]
+    config["dns"] = obj["dns"]
 
 
 def start():
     parser = ArgumentParser(description="EmerVPN shell utility.")
     parser.add_argument("command", type=str, help="command")
-    parser.add_argument("--args", type=str, nargs="+", help="optional arguments")
+    parser.add_argument("option", type=str, nargs="?", help="optional argument")
     parser.add_argument("-u", "--user", type=str, help="rpc user", default="emcrpccoin")
     parser.add_argument("-p", "--password", type=str, help="rpc password")
     parser.add_argument("-H", "--host", type=str, help="rpc host", default="localhost")
@@ -67,7 +71,7 @@ def start():
     elif args.command == "getkey":
         print(binascii.hexlify(config["crypt_key"]).decode())
     elif args.command == "setkey":
-        config["crypt_key"] = binascii.unhexlify(args.args[0])
+        config["crypt_key"] = binascii.unhexlify(args.option)
         config_reader.save()
     elif args.command == "init":
         name = f"vpn:{sha256(config['crypt_key'])}"
@@ -76,22 +80,26 @@ def start():
             create = False
         except pyemer.authproxy.JSONRPCException:
             create = True
-        subnet = input("Subnet (10.7.0.): ")
+        subnet = input("Subnet (10.7.0.0/24): ")
         if not subnet:
-            subnet = "10.7.0."
-        obj = {"subnet": subnet}
+            subnet = "10.7.0.0/24"
+        obj = {"subnet": subnet, "revoked": False, "dns": "1.1.1.1"}
         if not create:
-            if obj == ubjson.loadb(cryptor.decrypt(value)):
+            if obj == ubjson.loadb(
+                cryptor.decrypt(
+                    emervpn.crypto.EncryptedData(
+                        value.record.value[24:], value.record.value[:24]
+                    )
+                )
+            ):
                 return
         data = cryptor.crypt(ubjson.dumpb(obj))
         if create:
-            emer.name_new(
-                name, data.nonce + data.ciphertext, 30, emer.get_account_address()
-            )
+            emer.name_new(name, data.ciphertext, 30, emer.get_account_address())
         else:
             emer.rpc_connection.name_update(
                 name,
-                base64.b64encode(data.nonce + data.ciphertext).decode(),
+                base64.b64encode(data.ciphertext).decode(),
                 30,
                 emer.get_account_address().address,
                 "base64",
@@ -124,20 +132,18 @@ def start():
             if obj == ubjson.loadb(
                 cryptor.decrypt(
                     emervpn.crypto.EncryptedData(
-                        value.record.value[48:], value.record.value[:24]
+                        value.record.value[24:], value.record.value[:24]
                     )
                 )
             ):
                 return
         data = cryptor.crypt(ubjson.dumpb(obj))
         if create:
-            emer.name_new(
-                name, data.nonce + data.ciphertext, 30, emer.get_account_address()
-            )
+            emer.name_new(name, data.ciphertext, 30, emer.get_account_address())
         else:
             emer.rpc_connection.name_update(
                 name,
-                base64.b64encode(data.nonce + data.ciphertext).decode(),
+                base64.b64encode(data.ciphertext).decode(),
                 30,
                 emer.get_account_address().address,
                 "base64",
@@ -146,7 +152,7 @@ def start():
         reconfigure(emer, config)
         config_reader.save()
         config_builder = WGConfigBuilder(config["privkey"], config["pubkey"], config)
-        peers = emervpn.main.get_peers(emer, config["crypt_key"], cryptor)
+        peers = emervpn.utils.get_peers(emer, config["crypt_key"], cryptor)
         config_builder.add_peers(peers)
         print(config_builder.generate())
     elif args.command == "config":

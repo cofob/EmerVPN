@@ -1,3 +1,5 @@
+import ipaddress
+
 import pyemer
 import ubjson
 
@@ -14,7 +16,7 @@ def get_peers(emer: pyemer.Emer, crypt_key: bytes, cryptor: emervpn.crypto.Crypt
             obj = ubjson.loadb(
                 cryptor.decrypt(
                     emervpn.crypto.EncryptedData(
-                        value.record.value[48:], value.record.value[:24]
+                        value.record.value[24:], value.record.value[:24]
                     )
                 )
             )
@@ -23,3 +25,12 @@ def get_peers(emer: pyemer.Emer, crypt_key: bytes, cryptor: emervpn.crypto.Crypt
         except pyemer.authproxy.JSONRPCException:
             break
     return peers
+
+
+def get_addr_for_i(config, i):
+    net: ipaddress.IPv4Network = ipaddress.ip_network(config["subnet"])
+    return list(net.hosts())[i]
+
+
+def get_mask(config: dict):
+    return config["subnet"].split("/")[1]

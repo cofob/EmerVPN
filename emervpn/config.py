@@ -1,4 +1,5 @@
 import ubjson
+from emervpn.utils import get_addr_for_i, get_mask
 
 
 class WGConfigBuilder:
@@ -17,13 +18,13 @@ class WGConfigBuilder:
             return ""
         return f"""\n[Peer]
 PublicKey  = {peer["pubkey"]}
-AllowedIPs = {self.config["subnet"]}{peer["i"]}/32
+AllowedIPs = {get_addr_for_i(self.config, peer["i"])}/32
 Endpoint   = {peer["ip"]}:{peer["port"]}"""
 
     def generate(self) -> str:
         return f"""[Interface]
-Address    = {self.config["subnet"]}{self.config["i"]}/24
-DNS        = 1.1.1.1
+Address    = {get_addr_for_i(self.config, self.config["i"])}/{get_mask(self.config)}
+DNS        = {self.config["dns"]}
 PrivateKey = {self.private_key}
 ListenPort = 51820
 PostUp     = iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o enp9s0 -j MASQUERADE
