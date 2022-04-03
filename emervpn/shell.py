@@ -30,6 +30,7 @@ def reconfigure(emer: pyemer.Emer, config: dict) -> None:
         exit(1)
     config["subnet"] = obj["subnet"]
     config["dns"] = obj["dns"]
+    config["psk"] = obj["psk"]
 
 
 def start():
@@ -41,6 +42,7 @@ def start():
     parser.add_argument("-H", "--host", type=str, help="rpc host", default="localhost")
     parser.add_argument("-P", "--port", type=int, help="rpc port", default=6662)
     parser.add_argument("-i", "--interface", type=str, help="interface name", default="eth0")
+    parser.add_argument('--listen', action='store_true')
     args = parser.parse_args()
 
     config_reader = ConfigReader()
@@ -51,6 +53,9 @@ def start():
 
     config["privkey"] = config.get(
         "pubkey", subprocess.check_output("wg genkey".split()).decode().strip()
+    )
+    config["psk"] = config.get(
+        "psk", subprocess.check_output("wg genpsk".split()).decode().strip()
     )
     p = subprocess.Popen(
         "wg pubkey".split(),
@@ -63,6 +68,7 @@ def start():
     )
 
     config["interface"] = args.interface
+    config["listen"] = args.listen
 
     config_reader.save()
 
@@ -86,7 +92,7 @@ def start():
         subnet = input("Subnet (10.7.0.0/24): ")
         if not subnet:
             subnet = "10.7.0.0/24"
-        obj = {"subnet": subnet, "revoked": False, "dns": "1.1.1.1"}
+        obj = {"subnet": subnet, "revoked": False, "dns": "1.1.1.1", "psk": config["psk"]}
         if not create:
             if obj == ubjson.loadb(
                 cryptor.decrypt(
@@ -130,6 +136,7 @@ def start():
             "ip": requests.get("https://eth0.me/").text.strip(),
             "port": 51280,
             "pubkey": config["pubkey"],
+            "listen": config["listen"]
         }
         if not create:
             if obj == ubjson.loadb(
@@ -139,6 +146,7 @@ def start():
                     )
                 )
             ):
+                print("Up to date")
                 return
         data = cryptor.crypt(ubjson.dumpb(obj))
         if create:

@@ -16,20 +16,22 @@ class WGConfigBuilder:
     def generate_peer(self, peer) -> str:
         if peer["i"] == self.config["i"]:
             return ""
-        return f"""\n[Peer]
+        return f"""\n\n[Peer]
 PublicKey  = {peer["pubkey"]}
-AllowedIPs = {get_addr_for_i(self.config, peer["i"])}/32
-Endpoint   = {peer["ip"]}:{peer["port"]}"""
+AllowedIPs = {get_addr_for_i(self.config, peer["i"])}/32""" + \
+f'Endpoint   = {peer["ip"]}:{peer["port"]}]' if peer["listen"] else "" + \
+f"""PersistentKeepalive = 20
+PresharedKey = {self.config["psk"]}"""
 
     def generate(self) -> str:
         return f"""[Interface]
 Address    = {get_addr_for_i(self.config, self.config["i"])}/{get_mask(self.config)}
 DNS        = {self.config["dns"]}
-PrivateKey = {self.private_key}
-ListenPort = 51820
-PostUp     = iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o {self.config["interface"]} -j MASQUERADE
+PrivateKey = {self.private_key}""" + \
+"ListenPort = 51820" if self.config["listen"] else "" + \
+"""PostUp     = iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o {self.config["interface"]} -j MASQUERADE
 PostDown   = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o {self.config["interface"]} -j MASQUERADE
-{''.join([self.generate_peer(peer) for peer in self.peers])}"""
+{''.join([self.generate_peer(peer) for peer in self.peers])}""".strip()
 
 
 class ConfigReader:
